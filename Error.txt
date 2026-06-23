@@ -1,0 +1,31 @@
+============================================================
+Climate Reanalyzer SST Anomaly Globe -> map.png
+============================================================
+Python : 3.14.5 (C:\Program Files\Python314\python.exe)
+Output : C:\Users\ecoutinh\Downloads\PDF-Globe-main (2)\PDF-Globe-main\map.png
+--- trying strategy: urllib ---
+[urllib] GET https://climatereanalyzer.org/wx/todays-weather/maps/gfs_pacific-sat_sstanom_d1.png  (attempt 1/3)
+[urllib] error on attempt 1: <urlopen error [WinError 10054] An existing connection was forcibly closed by the remote host>
+[urllib] GET https://climatereanalyzer.org/wx/todays-weather/maps/gfs_pacific-sat_sstanom_d1.png  (attempt 2/3)
+[urllib] error on attempt 2: <urlopen error [WinError 10054] An existing connection was forcibly closed by the remote host>
+[urllib] GET https://climatereanalyzer.org/wx/todays-weather/maps/gfs_pacific-sat_sstanom_d1.png  (attempt 3/3)
+[urllib] error on attempt 3: <urlopen error [WinError 10054] An existing connection was forcibly closed by the remote host>
+[urllib] giving up after 3 attempts (<urlopen error [WinError 10054] An existing connection was forcibly closed by the remote host>).
+--- trying strategy: requests ---
+[requests] GET https://climatereanalyzer.org/wx/todays-weather/maps/gfs_pacific-sat_sstanom_d1.png  (attempt 1/3)
+[requests] error on attempt 1: ('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))
+[requests] GET https://climatereanalyzer.org/wx/todays-weather/maps/gfs_pacific-sat_sstanom_d1.png  (attempt 2/3)
+[requests] error on attempt 2: ('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))
+[requests] GET https://climatereanalyzer.org/wx/todays-weather/maps/gfs_pacific-sat_sstanom_d1.png  (attempt 3/3)
+[requests] error on attempt 3: ('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))
+[requests] giving up after 3 attempts (('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))).
+--- trying strategy: playwright ---
+[playwright] Not installed; skipping.
+ERROR: All download strategies failed. Possible causes:
+  * No internet on this machine.
+  * Corporate firewall/proxy blocking climatereanalyzer.org.
+  * The site temporarily down.
+Try opening this URL in a browser on this same PC to confirm:
+  https://climatereanalyzer.org/wx/todays-weather/maps/gfs_pacific-sat_sstanom_d1.png
+PS C:\Program Files\Microsoft VS Code> ^C
+PS C:\Program Files\Microsoft VS Code> 
