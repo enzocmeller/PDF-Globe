@@ -1,2 +1,1 @@
-$wp=[System.Net.WebRequest]::GetSystemWebProxy(); $wp.Credentials=[System.Net.CredentialCache]::DefaultCredentials; [System.Net.WebRequest]::DefaultWebProxy=$wp
-Invoke-WebRequest -Uri "https://climatereanalyzer.org/wx/todays-weather/maps/gfs_pacific-sat_sstanom_d1.png" -OutFile "$env:USERPROFILE\Downloads\test_map.png" -UseBasicParsing
+Get-Item "$env:USERPROFILE\Downloads\test_map.png" | Select-Object Length, LastWriteTime, FullName
