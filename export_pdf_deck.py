@@ -49,6 +49,12 @@ SLIDE_ORDER = [
     "Barley S&D",
     "Corn S&D",
     "WRD Corn Chart",
+    # --- Soybean complex -------------------------------------------------
+    # These slides are skipped (with a warning) until you create the matching
+    # sheets in USDA_PSD.xlsx. Rename here to match whatever you name them.
+    "Soybean S&D",
+    "Soybean Meal S&D",
+    "Soybean Oil S&D",
 ]
 
 # Uniform slide canvas:
