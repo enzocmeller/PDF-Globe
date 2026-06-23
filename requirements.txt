@@ -1,0 +1,8 @@
+# Core dependencies for the USDA PSD -> PDF deck pipeline.
+# Pinned for reproducible, offline-capable installs (see setup.bat).
+pandas
+requests
+pymupdf
+pywin32
+Pillow
+truststore

@@ -1,6 +1,6 @@
 """
-Update_Map.py
--------------
+final map.py
+------------
 Downloads the Pacific-centered SST Anomaly orthographic globe from
 Climate Reanalyzer and saves it next to this script as `map.png`.
 
@@ -21,6 +21,16 @@ import traceback
 import urllib.request
 import urllib.error
 from pathlib import Path
+
+# --- Corporate-firewall friendliness ---------------------------------------
+# Trust the operating system's certificate store (Windows) so HTTPS works
+# behind SSL-inspection proxies that re-sign traffic with a company root CA.
+# Safe no-op if truststore isn't installed.
+try:
+    import truststore as _truststore
+    _truststore.inject_into_ssl()
+except Exception:
+    pass
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 OUTPUT_PNG = SCRIPT_DIR / "map.png"

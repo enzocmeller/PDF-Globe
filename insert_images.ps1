@@ -15,7 +15,7 @@
 #
 # Inputs (must already exist in the same folder as this script):
 #   - USDA_PSD.xlsx
-#   - map.png      (from "final map.py" / Update_Map.py)
+#   - map.png      (from "final map.py")
 #   - elnino.png   (from final_elnino.py)
 # =============================================================================
 
@@ -30,17 +30,17 @@ param(
 # -----------------------------------------------------------------------------
 $SheetName       = "Globe & ElNino"
 
-$GlobeAnchorCell = "AU80"
-$NinoAnchorCell  = "BC80"
+# Each image is sized to FILL the cell range below (preserving aspect ratio)
+# and centered inside it. Left half of the slide = globe, right half = El Nino.
+# These ranges sit below the two captions (row 72) and above the footer (row 91).
+$GlobeRange      = "AT74:AY89"
+$NinoRange       = "AZ74:BG89"
 
 $GlobeShapeName  = "CR_Globe"
 $NinoShapeName   = "CPC_ElNino"
 
-# Starting small per your request. Width in *points* (1 pt = 1/72 inch).
-# Excel works in points; height auto-adjusts from aspect ratio. Bump these
-# after the first run if you want larger.
-$GlobeWidthPt    = 180     # ~2.5 inches wide
-$NinoWidthPt     = 220     # ~3.05 inches wide
+# Fraction of the range each image fills (1.0 = touch the range edges).
+$FillFactor      = 0.97
 
 # Set $true on first run if you want to also remove the older untitled
 # images that currently sit at AS74 (800x774) and AX74 (1100x850). After
@@ -88,7 +88,7 @@ Write-Host "Workbook : $Workbook"
 Write-Host "Globe PNG: $MapPng"
 Write-Host "Nino  PNG: $NinoPng"
 Write-Host "Sheet    : $SheetName"
-Write-Host "Anchors  : $GlobeAnchorCell (globe), $NinoAnchorCell (El Nino)"
+Write-Host "Ranges   : $GlobeRange (globe), $NinoRange (El Nino)"
 Write-Host ""
 
 # -----------------------------------------------------------------------------
@@ -160,44 +160,47 @@ try {
     }
 
     # ------------------------------------------------------------------
-    # Helper: insert picture at a cell anchor, aspect-locked.
+    # Helper: insert a picture sized to FILL a cell range (aspect-locked)
+    # and centered inside it.
     # ------------------------------------------------------------------
-    function Insert-Picture($worksheet, $pngPath, $anchorCell, $shapeName, $widthPt) {
-        Write-Host "Inserting '$shapeName' from $([System.IO.Path]::GetFileName($pngPath)) at $anchorCell ..."
+    function Insert-PictureInRange($worksheet, $pngPath, $rangeAddr, $shapeName, $fill) {
+        Write-Host "Inserting '$shapeName' from $([System.IO.Path]::GetFileName($pngPath)) into $rangeAddr ..."
 
         Remove-ShapeByName $worksheet $shapeName
 
-        $anchor = $worksheet.Range($anchorCell)
-        $left   = $anchor.Left
-        $top    = $anchor.Top
+        $rng = $worksheet.Range($rangeAddr)
+        $rL = $rng.Left; $rT = $rng.Top; $rW = $rng.Width; $rH = $rng.Height
 
         # AddPicture(Filename, LinkToFile, SaveWithDocument, Left, Top, Width, Height)
-        # Pass -1 for Width/Height to use native, then resize while preserving ratio.
+        # Insert at native size (-1,-1) first so we can read the true aspect.
         $shp = $worksheet.Shapes.AddPicture(
-            $pngPath,
-            $msoFalse,        # LinkToFile = no -> embed bytes
-            $msoCTrue,        # SaveWithDocument = yes
-            $left,
-            $top,
-            -1,               # native width
-            -1                # native height
-        )
+            $pngPath, $msoFalse, $msoCTrue, $rL, $rT, -1, -1)
         $shp.Name = $shapeName
         $shp.LockAspectRatio = $msoTrue
-        $shp.Width = [double]$widthPt   # height follows aspect ratio
-        # Pin top-left exactly to the anchor cell (AddPicture sometimes
-        # nudges by sub-pixel rounding).
-        $shp.Left = $left
-        $shp.Top  = $top
+        $nativeW = $shp.Width
+        $nativeH = $shp.Height
 
-        Write-Host "  -> placed at $anchorCell  size = $([math]::Round($shp.Width,1)) x $([math]::Round($shp.Height,1)) pt"
+        # Scale to fill the range (contain), preserving aspect.
+        $availW = $rW * $fill
+        $availH = $rH * $fill
+        $scale  = [math]::Min($availW / $nativeW, $availH / $nativeH)
+        $newW   = $nativeW * $scale
+        $shp.Width = [double]$newW         # height follows via locked aspect
+        $newH   = $shp.Height
+
+        # Center within the range, both axes.
+        $shp.Left = $rL + ($rW - $newW) / 2.0
+        $shp.Top  = $rT + ($rH - $newH) / 2.0
+
+        Write-Host ("  -> {0}: {1:N0} x {2:N0} pt, centered in {3}" -f `
+                    $shapeName, $newW, $newH, $rangeAddr)
     }
 
     # ------------------------------------------------------------------
     # Do the work
     # ------------------------------------------------------------------
-    Insert-Picture $ws $MapPng  $GlobeAnchorCell $GlobeShapeName $GlobeWidthPt
-    Insert-Picture $ws $NinoPng $NinoAnchorCell  $NinoShapeName  $NinoWidthPt
+    Insert-PictureInRange $ws $MapPng  $GlobeRange $GlobeShapeName $FillFactor
+    Insert-PictureInRange $ws $NinoPng $NinoRange  $NinoShapeName  $FillFactor
 
     Write-Host ""
     Write-Host "Saving workbook ..."

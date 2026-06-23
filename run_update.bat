@@ -5,8 +5,25 @@ REM  Double-click this file (or run it from a scheduled task).
 REM ============================================================
 cd /d "%~dp0"
 
+REM Firewall-friendly: all dependencies live in .venv, so never reach out to
+REM PyPI at run time (these env vars tell the download scripts to skip pip).
+set "NO_PIP=1"
+set "GET_GLOBE_NO_PIP=1"
+
+REM Auto-bootstrap on a fresh machine: build .venv + install deps if missing.
+if not exist "%~dp0.venv\Scripts\python.exe" (
+  echo .venv not found -- running one-time setup ...
+  call "%~dp0setup.bat"
+)
+if not exist "%~dp0.venv\Scripts\python.exe" (
+  echo.
+  echo ERROR: setup did not complete -- cannot continue. See messages above.
+  pause
+  exit /b 1
+)
+
 echo === Step 1/2: pulling latest two USDA releases ===
-"C:\Program Files\Python314\python.exe" "%~dp0update_psd.py"
+"%~dp0.venv\Scripts\python.exe" "%~dp0update_psd.py"
 if errorlevel 1 (
   echo.
   echo Python step FAILED -- Excel was NOT refreshed.
@@ -48,21 +65,21 @@ if errorlevel 1 (
 )
 
 echo.
-echo === Step 4/4: exporting PowerPoint ===
+echo === Step 4/4: exporting PDF deck ===
 for /f %%I in ('powershell -NoProfile -Command "(Get-Date).ToString('yyyy-MM-dd')"') do set "TODAY=%%I"
-set "PPT_NAME=AUS SnD Commodities 2026 - %TODAY%.pptx"
-set "OUTPUT_PATH=%USERPROFILE%\Desktop\%PPT_NAME%"
+set "PDF_NAME=AUS SnD Commodities 2026 - %TODAY%.pdf"
+set "OUTPUT_PATH=%USERPROFILE%\Desktop\%PDF_NAME%"
 if exist "%OUTPUT_PATH%" del /f /q "%OUTPUT_PATH%"
-"%~dp0.venv\Scripts\python.exe" "%~dp0export_pdfs.py" "%~dp0USDA_PSD.xlsx" "%OUTPUT_PATH%"
+"%~dp0.venv\Scripts\python.exe" "%~dp0export_pdf_deck.py" "%~dp0USDA_PSD.xlsx" "%OUTPUT_PATH%"
 if errorlevel 1 (
   echo.
-  echo PowerPoint export step FAILED.
+  echo PDF export step FAILED.
   pause
   exit /b 1
 )
 
 echo.
-echo PowerPoint generated: "%OUTPUT_PATH%"
+echo PDF deck generated: "%OUTPUT_PATH%"
 echo.
 echo Done - all tasks completed successfully!
 pause

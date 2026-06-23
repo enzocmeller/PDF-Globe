@@ -38,6 +38,16 @@ import urllib.error
 import zlib
 from pathlib import Path
 
+# --- Corporate-firewall friendliness ---------------------------------------
+# Trust the operating system's certificate store (Windows) so HTTPS works
+# behind SSL-inspection proxies that re-sign traffic with a company root CA.
+# Safe no-op if truststore isn't installed.
+try:
+    import truststore as _truststore
+    _truststore.inject_into_ssl()
+except Exception:
+    pass
+
 # ---------------------------------------------------------------------------
 # CONFIG
 # ---------------------------------------------------------------------------
