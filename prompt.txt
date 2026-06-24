@@ -1,0 +1,375 @@
+I need you to build a complete production-ready Python data pipeline that pulls public U.S. export data directly from the U.S. Census International Trade API and generates an Excel database that replicates the structure and data logic shown in the attached PDF report.
+
+Very important:
+- The script must NOT be hardcoded to April 2026.
+- The script must automatically detect the most recent available month from the U.S. Census API every time the script is run.
+- Every time I run the Python script, it should refresh from the Census API and rebuild the Excel database using the newest available data.
+- If a new month has been released by Census, the script should automatically move forward to that month.
+- If a new month has not been released yet, the script should use the latest month available from the API.
+- The output should always be based on the most recent available Census export month.
+
+This is all public information from the U.S. Census. Use the official Census API, not unofficial scraping.
+
+Use my Census API key:
+API_KEY = "094d3426d1a56641a0142b3298ac2bcef5244c64"
+
+Main Census API endpoint to use:
+https://api.census.gov/data/timeseries/intltrade/exports/hs
+
+The Census endpoint returns monthly U.S. exports by HS/Schedule B commodity code. Use variables such as:
+- CTY_CODE
+- CTY_NAME
+- E_COMMODITY
+- E_COMMODITY_LDESC
+- ALL_VAL_MO
+- QTY_1_MO
+- QTY_2_MO
+- UNIT_QY1
+- UNIT_QY2
+- MONTH
+- time
+
+Important API note:
+- If the API rejects `time` inside the `get=` list, do not request `time` as a returned variable.
+- Use `time` as a filter/predicate, for example `&time=2026-04` or `&time=*`.
+- If `QTY_1_MO` is zero or missing for a broad 4-digit HS code, search/use the correct detailed Schedule B / HS export code or codes, then aggregate.
+
+Goal:
+Build an Excel database that refreshes from Census data and recreates all the data categories shown in the PDF report.
+
+The PDF shows these commodities:
+1. SOYBEAN
+2. MEAL / Soybean Meal
+3. OIL / Soybean Oil
+4. CORN
+5. WHEAT
+6. PORK, including pork variety meats
+7. CHICKEN
+8. BEEF
+
+The PDF structure shows:
+- Main destinations for the latest month
+- Previous month comparison
+- Previous year same month comparison
+- Crop-year-to-date or calendar-year-to-date exports by destination
+- Historical annual/crop-year exports by destination
+- Monthly time series for charts
+- Cumulative export totals for charts
+
+The final script should generate all of those dynamically based on the latest available Census month.
+
+Most recent month logic:
+1. Query the Census API to determine the latest available month.
+2. Use that as `report_month`.
+3. Define:
+   - current_month = latest available Census month
+   - previous_month = one calendar month before current_month
+   - previous_year_same_month = same month in prior year
+4. Example:
+   - If latest available Census data is June 2026:
+     - current_month = 2026-06
+     - previous_month = 2026-05
+     - previous_year_same_month = 2025-06
+   - If latest available Census data is April 2026:
+     - current_month = 2026-04
+     - previous_month = 2026-03
+     - previous_year_same_month = 2025-04
+
+The report title and Excel file name should update automatically:
+- Example if latest month is June 2026:
+  - Report title: USA EXPORTS: Jun/2026
+  - Excel output name: usa_exports_census_database_jun2026.xlsx
+- Example if latest month is April 2026:
+  - Report title: USA EXPORTS: Apr/2026
+  - Excel output name: usa_exports_census_database_apr2026.xlsx
+
+Commodity calendar/crop-year rules:
+Use these period definitions:
+
+1. SOYBEAN
+   - Crop year: Sep-Aug
+   - Crop-year start month: September
+   - Crop-year end month: August
+   - Unit: '000 t
+
+2. MEAL / Soybean Meal
+   - Crop year: Oct-Sep
+   - Crop-year start month: October
+   - Crop-year end month: September
+   - Unit: '000 t
+
+3. OIL / Soybean Oil
+   - Crop year: Oct-Sep
+   - Crop-year start month: October
+   - Crop-year end month: September
+   - Unit: '000 t
+
+4. CORN
+   - Crop year: Sep-Aug
+   - Crop-year start month: September
+   - Crop-year end month: August
+   - Unit: '000 t
+
+5. WHEAT
+   - Crop year: Jul-Jun
+   - Crop-year start month: July
+   - Crop-year end month: June
+   - Unit: '000 t
+
+6. PORK
+   - Calendar year: Jan-Dec
+   - Include pork variety meats
+   - Unit: '000 t
+
+7. CHICKEN
+   - Calendar year: Jan-Dec
+   - Unit: '000 t
+
+8. BEEF
+   - Calendar year: Jan-Dec
+   - Unit: '000 t
+
+Dynamic period logic:
+For each commodity, calculate the current crop year or calendar year based on the latest available Census month.
+
+Examples:
+- If latest month is June 2026:
+  - Soybean current crop year = 25/26, cumulative Sep 2025 through Jun 2026
+  - Corn current crop year = 25/26, cumulative Sep 2025 through Jun 2026
+  - Meal current crop year = 25/26, cumulative Oct 2025 through Jun 2026
+  - Oil current crop year = 25/26, cumulative Oct 2025 through Jun 2026
+  - Wheat current crop year = 25/26, cumulative Jul 2025 through Jun 2026
+  - Pork/Chicken/Beef current year = 2026, cumulative Jan 2026 through Jun 2026
+
+- If latest month is April 2026:
+  - Soybean current crop year = 25/26, cumulative Sep 2025 through Apr 2026
+  - Corn current crop year = 25/26, cumulative Sep 2025 through Apr 2026
+  - Meal current crop year = 25/26, cumulative Oct 2025 through Apr 2026
+  - Oil current crop year = 25/26, cumulative Oct 2025 through Apr 2026
+  - Wheat current crop year = 25/26, cumulative Jul 2025 through Apr 2026
+  - Pork/Chicken/Beef current year = 2026, cumulative Jan 2026 through Apr 2026
+
+Historical data scope:
+Pull enough monthly history to recreate historical tables:
+- For Soybean, Meal, Oil, Corn, and Wheat: pull data from at least July 2016 through the latest available month.
+- For Pork, Chicken, and Beef: pull data from at least January 2017 through the latest available month.
+- The script should not only pull the latest month. It must pull all months needed to calculate historical annual/crop-year totals and chart series.
+
+Commodity code handling:
+Start with likely HS/Schedule B headings:
+- Soybean: 1201
+- Soybean meal: 2304
+- Soybean oil: 1507
+- Corn: 1005
+- Wheat: 1001
+
+For pork, chicken, and beef:
+- Do not guess blindly.
+- Use Census/Schedule B export commodity descriptions and validate against the report-style totals.
+- Pork must include pork variety meats.
+- Chicken should represent U.S. chicken exports.
+- Beef should represent U.S. beef exports.
+- If broad HS headings return incorrect quantity values, use detailed 6-digit or 10-digit Schedule B export codes and aggregate.
+
+Create a `commodity_code_mapping` sheet that lists:
+- commodity
+- code_used
+- code_description
+- include_or_exclude
+- reason
+- validation_status
+- notes
+
+Quantity conversion:
+- Census quantity values may be in KG, metric tons, or another unit.
+- Convert all physical quantities to thousand metric tonnes:
+  - If unit is KG: volume_000_t = quantity / 1,000,000
+  - If unit is metric tons: volume_000_t = quantity / 1,000
+  - If another unit appears, document and convert correctly.
+- Use QTY_1_MO or QTY_2_MO depending on which one contains the correct physical quantity.
+- Do not use export value for tonnage tables.
+- Preserve ALL_VAL_MO in a separate export value column.
+
+Country handling:
+- Keep the original Census country names in one column.
+- Create a normalized country name column to match the report style.
+- Use a country normalization dictionary for names like:
+  - KOREA, SOUTH -> South Korea
+  - VIET NAM / VIETNAM -> Vietnam
+  - TAIWAN -> Taiwan
+  - DOMINICAN REPUBLIC -> Dominican Republic
+  - EUROPEAN UNION -> European Union
+  - HONG KONG -> Hong Kong
+- Include World as the sum of all destination countries.
+- Include Others as World minus the listed top destinations for each table.
+- Do not double count country groups. If European Union or other country groups are returned by Census as group codes, document the treatment and avoid double counting.
+
+Output tables required:
+
+A) main_destinations_latest_month
+This table should replicate the “Main Destinations in [latest month]” table dynamically.
+
+Columns:
+- commodity
+- report_month
+- destination_country
+- rank
+- current_month_volume_000_t
+- share_percent
+- previous_month_volume_000_t
+- previous_year_same_month_volume_000_t
+- month_over_month_change_000_t
+- year_over_year_change_000_t
+- source_endpoint
+- source_commodity_code_or_codes
+
+B) cumulative_by_destination
+This table should replicate the crop-year/calendar-year-to-date destination table dynamically.
+
+Columns:
+- commodity
+- period_type: crop_year or calendar_year
+- period_label
+- period_start_date
+- period_end_date
+- destination_country
+- cumulative_volume_000_t
+- previous_equivalent_period_volume_000_t
+- delta_000_t
+- share_percent
+- source_commodity_code_or_codes
+
+Examples:
+- If latest month is June 2026:
+  - Soybean period label = 25/26*
+  - Soybean period = Sep 2025 through Jun 2026
+  - Previous equivalent period = Sep 2024 through Jun 2025
+- If latest month is April 2026:
+  - Soybean period label = 25/26*
+  - Soybean period = Sep 2025 through Apr 2026
+  - Previous equivalent period = Sep 2024 through Apr 2025
+
+C) historical_by_destination
+Long-format table for historical annual/crop-year exports by destination.
+
+Columns:
+- commodity
+- destination_country
+- period_label
+- period_start_date
+- period_end_date
+- volume_000_t
+- share_percent_if_applicable
+- is_partial_period
+- source_commodity_code_or_codes
+
+For crop-year commodities:
+- Create crop-year labels like 16/17, 17/18, 18/19, etc.
+- Current incomplete year should have an asterisk, e.g. 25/26*.
+
+For calendar-year commodities:
+- Create labels like 2017, 2018, 2019, etc.
+- Current incomplete year should have an asterisk, e.g. 2026*.
+
+D) monthly_world_timeseries
+Monthly world total time series for charts.
+
+Columns:
+- commodity
+- census_time
+- calendar_year
+- month_number
+- month_name
+- crop_or_calendar_year_label
+- crop_year_month_order
+- total_world_volume_000_t
+- prior_year_volume_000_t
+- avg_20_24_volume_000_t
+- min_20_24_volume_000_t
+- max_20_24_volume_000_t
+- source_commodity_code_or_codes
+
+E) cumulative_world_summary
+Cumulative chart summary data.
+
+Columns:
+- commodity
+- period_label
+- period_start_date
+- period_end_date
+- cumulative_volume_000_t
+- remaining_period_volume_000_t_if_full_year_available
+- total_year_volume_000_t_if_available
+- completed_or_partial_period
+- source_commodity_code_or_codes
+
+F) raw_census_monthly
+Raw Census results before aggregation.
+
+Columns should include:
+- commodity
+- source_code
+- CTY_CODE
+- CTY_NAME
+- normalized_country_name
+- E_COMMODITY
+- E_COMMODITY_LDESC
+- ALL_VAL_MO
+- QTY_1_MO
+- QTY_2_MO
+- UNIT_QY1
+- UNIT_QY2
+- MONTH
+- census_time
+- fetch_timestamp
+
+G) validation_against_latest_report_logic
+Since the month is dynamic, validation should not be hardcoded only to the attached PDF.
+Build validation in two layers:
+1. Internal consistency validation:
+   - World equals sum of destination countries.
+   - Others equals World minus listed top destinations.
+   - Current month, previous month, and previous year same month are calculated from the same Census source.
+   - Crop-year-to-date totals equal the sum of monthly values across the period.
+2. Optional PDF validation:
+   - If the latest available month equals the attached PDF report month, validate against PDF values.
+   - If the latest available month is newer than the PDF, skip exact PDF validation and note that the script is using newer Census data.
+
+Use the attached PDF as a structure/template, not as a fixed month.
+
+Excel output requirements:
+Create one Excel file each run with the latest month in the file name.
+
+Example:
+- If latest available Census month is 2026-06:
+  `usa_exports_census_database_jun2026.xlsx`
+- If latest available Census month is 2026-04:
+  `usa_exports_census_database_apr2026.xlsx`
+
+Also create or overwrite a stable latest file:
+`usa_exports_census_database_latest.xlsx`
+
+Create these Excel sheets:
+1. README
+   - Explain source, endpoint, report month, latest Census month detected, refresh timestamp, units, methodology, and API key handling.
+2. commodity_config
+   - Commodity, crop/calendar year start month, end month, report month, likely codes, final codes used.
+3. commodity_code_mapping
+   - All codes used and validation notes.
+4. raw_census_monthly
+   - Raw monthly API results from Census before aggregation.
+5. monthly_by_destination
+   - Clean monthly country-level data.
+6. main_destinations_latest_month
+   - Replicates the “Main Destinations in [latest month]” tables.
+7. cumulative_by_destination
+   - Replicates crop-year/calendar-year cumulative destination tables.
+8. historical_by_destination
+   - Historical destination tables in long format.
+9. monthly_world_timeseries
+   - Monthly world totals by commodity for charts.
+10. cumulative_world_summary
+   - Cumulative chart summary data.
+11. validation
+   - Internal validation plus optional PDF validation if applicable.
+12. errors_warnings_log
