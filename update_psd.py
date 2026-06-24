@@ -34,6 +34,15 @@ ARCHIVE_BASE = (
 #
 # To add a commodity, append its EXACT Commodity_Description (as USDA spells it)
 # to the right list -- or add a whole new dataset block.
+# Soybean complex (bean / meal / oil) and every vegetable oil -- all come from
+# the single oilseeds file, so one download covers them both.
+SOYBEAN_COMPLEX = ["Oilseed, Soybean", "Meal, Soybean", "Oil, Soybean"]
+VEG_OILS = [
+    "Oil, Coconut", "Oil, Cottonseed", "Oil, Olive", "Oil, Palm",
+    "Oil, Palm Kernel", "Oil, Peanut", "Oil, Rapeseed", "Oil, Soybean",
+    "Oil, Sunflowerseed",
+]
+
 DATASETS = [
     {
         "name": "grains",
@@ -43,8 +52,8 @@ DATASETS = [
     {
         "name": "oilseeds",
         "zip": "psd_oilseeds_csv.zip",
-        # USDA spelling:  the bean / the meal / the oil
-        "commodities": ["Oilseed, Soybean", "Meal, Soybean", "Oil, Soybean"],
+        # soybean complex + all vegetable oils (deduped)
+        "commodities": sorted(set(SOYBEAN_COMPLEX + VEG_OILS)),
     },
 ]
 
